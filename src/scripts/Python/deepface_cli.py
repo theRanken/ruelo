@@ -1,8 +1,7 @@
 import os, sys, json, argparse
 from deepface import DeepFace
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = 1  # Suppress TensorFlow warnings
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = 0  # Suppress OneDNN opts
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Suppress TensorFlow warnings
 
 
 # Argument parsing
@@ -19,6 +18,10 @@ try:
     if args.action == 'verify':
         if not args.img2:
             raise ValueError('img2 is required for verify action')
+        args.img1 = str(args.img1).strip()
+        args.img2 = str(args.img2).strip()
+        if not os.path.isfile(args.img1) or not os.path.isfile(args.img2):
+            raise ValueError('Both image paths must be valid files')
         result = DeepFace.verify(img1_path=args.img1, img2_path=args.img2, detector_backend='retinaface', model_name='Facenet512')
     elif args.action == 'analyze':
         result = DeepFace.analyze(img_path=args.img1, actions=args.models)
