@@ -98,6 +98,10 @@ php interact
 ## Troubleshooting
 - Make sure Python and DeepFace are installed and accessible from your command line.
 - If you get errors, check the output for details (e.g., missing dependencies, wrong image paths).
+- If you're using Docker please symlink the `python3` folder to a `python` folder like this:
+```shell
+RUN ln -s /usr/bin/python3 /usr/bin/python
+```
 
 ## License
 MIT
