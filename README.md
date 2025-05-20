@@ -35,7 +35,7 @@ Make sure your images are accessible by file path (local files).
 use DeepFacePHP\DeepFace;
 
 $deepface = new DeepFace();
-$result = $deepface->verify('path/to/image1.jpg', 'path/to/image2.jpg');
+$result = $deepface->compare('path/to/image1.jpg', 'path/to/image2.jpg');
 
 if ($result['verified']) {
     echo "Faces match!";
@@ -48,7 +48,7 @@ if ($result['verified']) {
 ```php
 use DeepFacePHP\DeepFace;
 
-$result = DeepFace::verifyImage'path/to/image1.jpg', 'path/to/image2.jpg');
+$result = DeepFace::compareImages('path/to/image1.jpg', 'path/to/image2.jpg');
 
 if ($result['verified']) {
     echo "Faces match!";
@@ -81,7 +81,13 @@ If your Python or script path is different, you can specify them:
 ```php
 $deepface = new DeepFace('python3', '/custom/path/deepface_cli.py');
 // Or for static methods:
-$result = DeepFace::verifyImage('img1.jpg', 'img2.jpg', 'python3', '/custom/path/deepface_cli.py');
+$result = DeepFace::compareImages('img1.jpg', 'img2.jpg', 'python3', '/custom/path/deepface_cli.py');
+```
+
+### 7. Interact with the library
+You can interact with the library by running the following command:
+```bash
+php interact
 ```
 
 ## How does it work?

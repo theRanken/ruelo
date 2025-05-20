@@ -1,0 +1,46 @@
+#!/usr/bin/env php
+<?php
+require __DIR__ . '/vendor/autoload.php';
+
+use DeepFacePHP\DeepFace;
+
+function prompt($message) {
+    echo $message;
+    return trim(fgets(STDIN));
+}
+
+echo "\n=== DeepFacePHP Interactive Shell ===\n";
+echo "Type 'exit' to quit.\n\n";
+
+while (true) {
+    $action = strtolower(prompt("Choose action ([v]erify, [a]nalyze, [q]uit): "));
+    if ($action === 'q' || $action === 'exit') {
+        echo "Goodbye!\n";
+        break;
+    }
+    if ($action === 'v' || $action === 'verify') {
+        $img1 = prompt("Enter path to first image: ");
+        $img2 = prompt("Enter path to second image: ");
+        try {
+            $result = DeepFace::compareImages($img1, $img2);
+            echo "\nResult: ".($result['verified'] ? 'Faces match!' : 'Faces do not match.')."\n";
+            print_r($result);
+        } catch (Exception $e) {
+            echo "Error: ".$e->getMessage()."\n";
+        }
+    } elseif ($action === 'a' || $action === 'analyze') {
+        $img = prompt("Enter path to image: ");
+        $models = prompt("Enter analysis models (comma separated, e.g. age,gender,emotion): ");
+        $modelsArr = array_filter(array_map('trim', explode(',', $models)));
+        try {
+            $result = DeepFace::analyzeImage($img, $modelsArr);
+            echo "\nAnalysis Result:\n";
+            print_r($result);
+        } catch (Exception $e) {
+            echo "Error: ".$e->getMessage()."\n";
+        }
+    } else {
+        echo "Unknown action. Please type 'verify', 'analyze', or 'quit'.\n";
+    }
+    echo "\n";
+}

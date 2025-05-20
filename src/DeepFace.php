@@ -52,7 +52,7 @@ class DeepFace
 
     private function parseOutput($output)
     {
-        $data = json_decode($output, true);
+        $data = json_decode($output ?? '', true);
         if (!$data || !$data['success']) {
             throw new \Exception($data['error'] ?? 'Unknown error');
         }
