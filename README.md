@@ -11,7 +11,7 @@ This package lets you verify if two faces match or analyze faces in images using
 
 ## Requirements
 - PHP 7.2 or higher
-- Python 3 with the `deepface` library installed
+- Python 3 with the `deepface` , `tf-keras` library installed
 - Composer (for PHP dependencies)
 
 ## Installation
@@ -22,7 +22,7 @@ This package lets you verify if two faces match or analyze faces in images using
 2. **Install Python dependencies:**
    Make sure you have Python 3 and pip installed, then run:
    ```bash
-   pip install deepface
+   pip install deepface, tf-keras
    ```
 
 ## Usage
