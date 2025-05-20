@@ -1,0 +1,22 @@
+{
+    "name": "theranken/deepfacephp",
+    "description": "A PHP library to interface with DeepFace Python scripts for face verification and analysis.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Agwegiokhe Oshiobugie",
+            "email": "rankencorp@email.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "DeepFacePHP\\": "src/"
+        }
+    },
+    "require-dev": {},
+    "minimum-stability": "stable"
+}
