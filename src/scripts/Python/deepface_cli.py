@@ -1,5 +1,9 @@
-import sys, json, argparse
+import os, sys, json, argparse
 from deepface import DeepFace
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = 1  # Suppress TensorFlow warnings
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = 0  # Suppress OneDNN opts
+
 
 # Argument parsing
 parser = argparse.ArgumentParser(description='DeepFace CLI for PHP integration')
@@ -11,10 +15,11 @@ parser.add_argument('--models', nargs='*', help='Models to use for analysis')
 args = parser.parse_args()
 
 try:
+
     if args.action == 'verify':
         if not args.img2:
             raise ValueError('img2 is required for verify action')
-        result = DeepFace.verify(img1_path=args.img1, img2_path=args.img2, detector_backend = 'retinaface', model='Facenet512')
+        result = DeepFace.verify(img1_path=args.img1, img2_path=args.img2, detector_backend='retinaface', model_name='Facenet512')
     elif args.action == 'analyze':
         result = DeepFace.analyze(img_path=args.img1, actions=args.models)
     print(json.dumps({'success': True, 'result': result}))

@@ -7,10 +7,15 @@ class DeepFace
     private $pythonPath;
     private $scriptPath;
 
-    public function __construct($pythonPath = 'python', $scriptPath = __DIR__ . '/scripts/Python/deepface_cli.py')
+
+    public function __construct($pythonPath = 'python', $scriptPath = __DIR__ . "/scripts/Python/deepface_cli.py")
     {
         $this->pythonPath = $pythonPath;
         $this->scriptPath = $scriptPath;
+
+        if (!file_exists($this->scriptPath)) {
+            throw new \Exception("Script not found: {$this->scriptPath}");
+        }
     }
 
     public function compare($img1, $img2)
@@ -38,13 +43,13 @@ class DeepFace
         return $this->parseOutput($output);
     }
 
-    public static function compareImages($img1, $img2, $pythonPath = 'python', $scriptPath = __DIR__ . '/../deepface_cli.py')
+    public static function compareImages($img1, $img2, $pythonPath = 'python', $scriptPath = __DIR__ . "/scripts/Python/deepface_cli.py")
     {
         $instance = new self($pythonPath, $scriptPath);
         return $instance->compare($img1, $img2);
     }
 
-    public static function analyzeImage($img, $models = [], $pythonPath = 'python', $scriptPath = __DIR__ . '/../deepface_cli.py')
+    public static function analyzeImage($img, $models = [], $pythonPath = 'python', $scriptPath = __DIR__ . "/scripts/Python/deepface_cli.py")
     {
         $instance = new self($pythonPath, $scriptPath);
         return $instance->analyze($img, $models);
