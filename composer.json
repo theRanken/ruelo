@@ -1,6 +1,6 @@
 {
-    "name": "theranken/deepfacephp",
-    "description": "A PHP library to interface with DeepFace Python scripts for face verification and analysis.",
+    "name": "theranken/ruelo",
+    "description": "A PHP library for facial match verification and emotional analysis.",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -11,12 +11,23 @@
     ],
     "require": {
         "php": ">=7.2"
-    },
-    "autoload": {
+    },    "autoload": {
         "psr-4": {
-            "DeepFacePHP\\": "src/"
+            "Ruelo\\": "src/"
         }
     },
-    "require-dev": {},
-    "minimum-stability": "stable"
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "pestphp/pest": "^3.8"
+    },
+    "minimum-stability": "stable",
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
 }

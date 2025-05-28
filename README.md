@@ -1,104 +1,200 @@
-# DeepFace PHP Library
+<div align="center">
+    <img src="src/assets/logo.jpg" alt="" width="200">
+</div>
 
-Easily use powerful face recognition and analysis in your PHP projects by connecting to the DeepFace Python library—no need to learn Python!
+A powerful face recognition and analysis library for PHP using MediaPipe, with support for file paths, base64 strings, and data URLs.
 
 ## What is this?
-This package lets you verify if two faces match or analyze faces in images using the popular [DeepFace](https://github.com/serengil/deepface) library, all from PHP. It works by running a Python script behind the scenes and giving you the results in PHP.
+This package provides robust face recognition, verification, and analysis capabilities using MediaPipe and deep learning models. It supports multiple input formats and provides comprehensive error handling and validation.
 
 ## Features
-- **Face Verification:** Check if two images are of the same person.
-- **Face Analysis:** Detect age, gender, emotion, and more from a single image.
+- **Face Verification:** Compare faces between two images with confidence scores
+- **Multiple Input Formats:** Support for file paths, base64 strings, and data URLs
+- **Base64 Utilities:** Built-in methods for converting between formats
+- **Input Validation:** Comprehensive error checking and validation
+- **Detailed Results:** Get match status, confidence scores, and similarity metrics
+- **Error Handling:** Clear error messages and consistent error format
 
 ## Requirements
+
+### PHP Requirements
 - PHP 7.2 or higher
-- Python 3 with the `deepface` , `tf-keras` library installed
+- php-fileinfo extension
+- php-json extension
 - Composer (for PHP dependencies)
+
+### Python Requirements
+- Python 3.6 or higher
+- mediapipe
+- opencv-python
+- numpy
+- scipy
 
 ## Installation
 1. **Install the PHP library:**
    ```bash
-   composer require theranken/deepface-php
+   composer require theranken/ruelo
    ```
 2. **Install Python dependencies:**
-   Make sure you have Python 3 and pip installed, then run:
    ```bash
-   pip install deepface, tf-keras
+   pip install -r requirements.txt
    ```
 
 ## Usage
 
-### 1. Prepare your images
-Make sure your images are accessible by file path (local files).
+### Basic Face Comparison
 
-### 2. Example: Face Verification (Instance Method)
 ```php
-use DeepFacePHP\DeepFace;
+use Ruelo\DeepFace;
 
 $deepface = new DeepFace();
+
+// Compare two image files
 $result = $deepface->compare('path/to/image1.jpg', 'path/to/image2.jpg');
-
-if ($result['verified']) {
-    echo "Faces match!";
-} else {
-    echo "Faces do not match.";
+if ($result['match']) {
+    echo "Match found! Confidence: " . ($result['confidence'] * 100) . "%\n";
 }
+
+// Using a custom threshold (0.0 to 1.0)
+$result = $deepface->compare('image1.jpg', 'image2.jpg', 0.5);
 ```
 
-### 3. Example: Face Verification (Static Method)
+### Working with Base64 Images
+
 ```php
-use DeepFacePHP\DeepFace;
-
-$result = DeepFace::compareImages('path/to/image1.jpg', 'path/to/image2.jpg');
-
-if ($result['verified']) {
-    echo "Faces match!";
-} else {
-    echo "Faces do not match.";
-}
-```
-
-### 4. Example: Face Analysis (Instance Method)
-```php
-use DeepFacePHP\DeepFace;
+use Ruelo\DeepFace;
 
 $deepface = new DeepFace();
-$result = $deepface->analyze('path/to/image.jpg', ['age', 'gender', 'emotion']);
 
-print_r($result);
+// Convert an image file to base64
+$base64 = $deepface->fileToBase64('path/to/image.jpg');
+
+// Compare with mixed formats
+$result = $deepface->compare($base64, 'path/to/image2.jpg');
+
+// Compare two base64 images
+$base64_1 = $deepface->fileToBase64('image1.jpg');
+$base64_2 = $deepface->fileToBase64('image2.jpg');
+$result = $deepface->compare($base64_1, $base64_2);
+
+// Working with data URLs
+$dataUrl = 'data:image/jpeg;base64,/9j/4AAQSkZJRg...';
+$result = $deepface->compare($dataUrl, 'image2.jpg');
 ```
 
-### 5. Example: Face Analysis (Static Method)
+### Face Analysis
+
 ```php
-use DeepFacePHP\DeepFace;
+use Ruelo\DeepFace;
 
-$result = DeepFace::analyzeImage('path/to/image.jpg', ['age', 'gender', 'emotion']);
+$deepface = new DeepFace();
 
-print_r($result);
+// Basic analysis
+$result = $deepface->analyze('path/to/image.jpg');
+
+// Analysis with specific models
+$models = ['age', 'gender', 'emotion'];
+$result = $deepface->analyze('path/to/image.jpg', $models);
 ```
 
-### 6. Customizing Python Path
-If your Python or script path is different, you can specify them:
+### Customizing Python Path
+
 ```php
+use Ruelo\DeepFace;
+
+// Custom Python interpreter or script path
 $deepface = new DeepFace('python3', '/custom/path/deepface_cli.py');
-// Or for static methods:
-$result = DeepFace::compareImages('img1.jpg', 'img2.jpg', 'python3', '/custom/path/deepface_cli.py');
+
+// Or using static methods
+$result = DeepFace::compareImages(
+    'img1.jpg',
+    'img2.jpg',
+    'python3',
+    '/custom/path/deepface_cli.py',
+    0.4  // threshold
+);
 ```
 
-### 7. Interact with the library
-You can interact with the library by running the following command:
+### Using Static Helper Methods
+
+```php
+use Ruelo\DeepFace;
+
+// Quick face comparison
+$result = DeepFace::compareImages('image1.jpg', 'image2.jpg');
+
+```
+
+### Interactive Usage
+You can interact with the library using the CLI tool:
 ```bash
 php interact
 ```
 
-## How does it work?
-- The PHP library runs a Python script using shell commands.
-- The Python script uses DeepFace to process the images and returns the results as JSON.
-- The PHP library reads and parses the results for you.
+## Results Format
+
+### Face Comparison Results
+```php
+[
+    'match' => true|false,          // Whether the faces match
+    'confidence' => 0.92,           // Match confidence (0 to 1)
+    'similarity' => 0.92,           // Similarity score (0 to 1)
+    'distance' => 0.08              // Normalized distance
+]
+```
+
+### Analysis Results
+```php
+[
+    'age' => 25,
+    'gender' => 'Man',
+    'dominant_emotion' => 'happy',
+    'emotion' => [
+        'angry' => 0.01,
+        'disgust' => 0.0,
+        'fear' => 0.01,
+        'happy' => 0.95,
+        'sad' => 0.02,
+        'surprise' => 0.01,
+        'neutral' => 0.0
+    ]
+]
+```
+
+### Error Format
+```php
+[
+    'error' => 'Error message description'
+]
+```
+
+Common error messages:
+- 'Both image sources are required'
+- 'Image file not found'
+- 'Failed to execute Python script'
+- 'Invalid JSON response'
+- 'Database path not found'
+
+## How It Works
+1. The PHP library validates inputs and handles format conversions
+2. A Python script using MediaPipe processes the images
+3. Results are returned as JSON and parsed into PHP arrays
+4. Comprehensive error handling ensures reliable operation
 
 ## Troubleshooting
-- Make sure Python and DeepFace are installed and accessible from your command line.
-- If you get errors, check the output for details (e.g., missing dependencies, wrong image paths).
-- If you're using Docker please symlink the `python3` folder to a `python` folder like this:
+
+### Installation Issues
+- Ensure Python 3.6+ is installed and accessible
+- Install all required Python packages: `pip install -r requirements.txt`
+- Check file permissions for the Python script
+
+### Input Problems
+- Verify image files exist and are readable
+- Ensure base64 strings are properly formatted
+- Check that data URLs include the correct MIME type
+
+### Docker Usage
+If using Python 3 in Docker, you might need to symlink python3:
 ```shell
 RUN ln -s /usr/bin/python3 /usr/bin/python
 ```
@@ -108,4 +204,4 @@ MIT
 
 ---
 
-**Enjoy using DeepFace in your PHP projects!**
+**Built with ❤️ using MediaPipe and PHP**

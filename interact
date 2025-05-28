@@ -2,7 +2,7 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
 
-use DeepFacePHP\DeepFace;
+use Ruelo\DeepFace;
 
 function prompt($message) {
     echo $message;

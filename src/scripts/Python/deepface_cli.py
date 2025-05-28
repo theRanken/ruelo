@@ -1,31 +1,26 @@
-import os, sys, json, argparse
-from deepface import DeepFace
+#!/usr/bin/env python3
+import sys, json
+from matchers.lib import MediaPipeFaceMatcher
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Suppress TensorFlow warnings
+def main():
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "Usage: python deepface_cli.py [--compare img1 img2 threshold] [--analyze img]"}))
+        sys.exit(1)
+    
+    matcher = MediaPipeFaceMatcher()
+    
+    if sys.argv[1] == '--compare' and len(sys.argv) >= 4:
+        image1_source = sys.argv[2]
+        image2_source = sys.argv[3]
+        threshold = float(sys.argv[4]) if len(sys.argv) > 4 else 0.4
+        result = matcher.compare_faces(image1_source, image2_source, threshold)
+    elif sys.argv[1] == '--analyze' and len(sys.argv) >= 3:
+        image_source = sys.argv[2]
+        result = matcher.analyze_face(image_source)
+    else:
+        result = {"error": "Invalid command. Use --compare or --analyze"}
+    
+    print(json.dumps(result))
 
-
-# Argument parsing
-parser = argparse.ArgumentParser(description='DeepFace CLI for PHP integration')
-parser.add_argument('--action', choices=['verify', 'analyze'], required=True, help='Action to perform')
-parser.add_argument('--img1', required=True, help='Path to the first image')
-parser.add_argument('--img2', help='Path to the second image (for verify)')
-parser.add_argument('--models', nargs='*', help='Models to use for analysis')
-
-args = parser.parse_args()
-
-try:
-
-    if args.action == 'verify':
-        if not args.img2:
-            raise ValueError('img2 is required for verify action')
-        args.img1 = str(args.img1).strip()
-        args.img2 = str(args.img2).strip()
-        if not os.path.isfile(args.img1) or not os.path.isfile(args.img2):
-            raise ValueError('Both image paths must be valid files')
-        result = DeepFace.verify(img1_path=args.img1, img2_path=args.img2, detector_backend='retinaface', model_name='Facenet512')
-    elif args.action == 'analyze':
-        result = DeepFace.analyze(img_path=args.img1, actions=args.models)
-    print(json.dumps({'success': True, 'result': result}))
-except Exception as e:
-    print(json.dumps({'success': False, 'error': str(e)}))
-    sys.exit(1)
+if __name__ == "__main__":
+    main()
