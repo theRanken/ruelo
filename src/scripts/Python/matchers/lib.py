@@ -1,9 +1,6 @@
+import os, cv2, base64
 import mediapipe as mp
-import cv2
 import numpy as np
-import base64
-import os
-import urllib.request
 from scipy.spatial.distance import cosine
 
 class MediaPipeFaceMatcher:    
@@ -22,76 +19,44 @@ class MediaPipeFaceMatcher:
             min_tracking_confidence=0.5,
             refine_face_landmarks=True
         )
-        
-        # Load pre-trained gender detection model (Caffe)
-        model_path = os.path.join(os.path.dirname(__file__), 'models')
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-            
-        self.gender_model_path = os.path.join(model_path, 'gender_net.caffemodel')
-        self.gender_proto_path = os.path.join(model_path, 'gender_deploy.prototxt')
-        
-        # Download models if they don't exist
-        if not os.path.exists(self.gender_model_path) or not os.path.exists(self.gender_proto_path):
-            self._download_gender_model()
-        
-        try:
-            self.gender_net = cv2.dnn.readNet(self.gender_model_path, self.gender_proto_path)
-        except Exception as e:
-            print(f"Warning: Could not load gender detection model: {str(e)}")
-            self.gender_net = None
+          # Initialize gender estimation parameters
+        self.gender_markers = {
+            'jaw_width': [(127, 356), (227, 132)],  # Left and right jaw points
+            'nose_to_chin': [(168, 8)],             # Nose tip to chin
+            'cheekbone_width': [(116, 345), (212, 432)]  # Cheekbone points
+        }
+        self.gender_threshold = 0.5  # Threshold for gender determination
             
         self.gender_labels = ['Male', 'Female']
-    
-    def _download_gender_model(self):
-        """Download gender detection model files"""
+    def predict_gender(self, landmarks):
+        """Predict gender using facial landmarks"""
         try:
-            # Download gender model
-            if not os.path.exists(self.gender_model_path):
-                print("Downloading gender detection model...")
-                model_url = "https://github.com/Tony607/focal_loss_keras/raw/master/models/gender_net.caffemodel"
-                urllib.request.urlretrieve(model_url, self.gender_model_path)
-                print("Gender detection model downloaded successfully")
+            # Calculate facial ratios
+            ratios = []
             
-            # Create proto file with model architecture
-            if not os.path.exists(self.gender_proto_path):
-                print("Creating gender detection model architecture...")
-                with open(self.gender_proto_path, 'w') as f:
-                    f.write('input: "data"\ninput_dim: 1\ninput_dim: 3\ninput_dim: 227\ninput_dim: 227\n')
-                    f.write('layer { name: "conv1" type: "Convolution" bottom: "data" top: "conv1" convolution_param { num_output: 96 kernel_size: 7 stride: 4 } }\n')
-                    f.write('layer { name: "relu1" type: "ReLU" bottom: "conv1" top: "conv1" }\n')
-                    f.write('layer { name: "pool1" type: "Pooling" bottom: "conv1" top: "pool1" pooling_param { pool: MAX kernel_size: 3 stride: 2 } }\n')
-                    f.write('layer { name: "fc8" type: "InnerProduct" bottom: "pool1" top: "fc8" inner_product_param { num_output: 2 } }\n')
-                    f.write('layer { name: "prob" type: "Softmax" bottom: "fc8" top: "prob" }')
-                print("Gender detection model architecture created successfully")
-                
-        except Exception as e:
-            print(f"Error downloading gender detection model: {str(e)}")
-            raise
-
-    def predict_gender(self, face_image):
-        """Predict gender using the pre-trained model"""
-        if self.gender_net is None:
-            return "Unknown"
+            # Calculate jaw width ratio
+            for points in self.gender_markers['jaw_width']:
+                width = abs(landmarks[points[0]].x - landmarks[points[1]].x)
+                height = abs(landmarks[points[0]].y - landmarks[points[1]].y)
+                ratios.append(width / height if height != 0 else 0)
             
-        try:
-            # Preprocess the face image
-            blob = cv2.dnn.blobFromImage(face_image, 1.0, (227, 227), 
-                                       (78.4263377603, 87.7689143744, 114.895847746), 
-                                       swapRB=False)
+            # Calculate nose to chin ratio
+            for points in self.gender_markers['nose_to_chin']:
+                ratio = abs(landmarks[points[0]].y - landmarks[points[1]].y)
+                ratios.append(ratio)
             
-            # Forward pass
-            self.gender_net.setInput(blob)
-            gender_preds = self.gender_net.forward()
+            # Calculate cheekbone width ratio
+            for points in self.gender_markers['cheekbone_width']:
+                width = abs(landmarks[points[0]].x - landmarks[points[1]].x)
+                height = abs(landmarks[points[0]].y - landmarks[points[1]].y)
+                ratios.append(width / height if height != 0 else 0)
             
-            # Get prediction
-            gender_idx = gender_preds[0].argmax()
-            confidence = gender_preds[0][gender_idx]
+            # Average the ratios
+            avg_ratio = sum(ratios) / len(ratios) if ratios else 0
             
-            # Return prediction only if confidence is high enough
-            if confidence > 0.6:
-                return self.gender_labels[gender_idx]
-            return "Unknown"
+            # Make prediction based on average ratio
+            # Generally, male faces have larger ratios
+            return "Male" if avg_ratio > self.gender_threshold else "Female"
             
         except Exception as e:
             print(f"Error predicting gender: {str(e)}")
@@ -255,26 +220,9 @@ class MediaPipeFaceMatcher:
             
             age = base_age + np.random.randint(-3, 4)
             age = max(18, min(65, age))
-            
-            # Extract face region for gender detection
-            h, w = image.shape[:2]
-            x1 = int(min(landmark.x for landmark in face_landmarks) * w)
-            y1 = int(min(landmark.y for landmark in face_landmarks) * h)
-            x2 = int(max(landmark.x for landmark in face_landmarks) * w)
-            y2 = int(max(landmark.y for landmark in face_landmarks) * h)
-            
-            # Add margin
-            margin = int(0.2 * (x2 - x1))
-            x1 = max(0, x1 - margin)
-            y1 = max(0, y1 - margin)
-            x2 = min(w, x2 + margin)
-            y2 = min(h, y2 + margin)
-            
-            face_image = image[y1:y2, x1:x2]
-            
-            # Use ML model for gender detection
-            gender = self.predict_gender(face_image)
-            gender_confidence = 0.8 if gender != "Unknown" else 0.5
+              # Use facial landmarks for gender detection
+            gender = self.predict_gender(face_landmarks)
+            gender_confidence = 0.7  # Fixed confidence since we're using geometric measurements
             
             return {
                 "age": int(age),
