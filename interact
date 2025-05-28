@@ -34,10 +34,9 @@ function verify() {
  */
 function analyze() {
     $img = prompt("Enter path to image: ");
-    $models = prompt("Enter analysis models (comma separated, e");
-    $modelsArr = array_filter(array_map('trim', explode(',', $models)));
     try {
-        $result = DeepFace::analyzeImage($img, $modelsArr);
+        // Call analyzeImage with just the image path, using default python path
+        $result = DeepFace::analyzeImage($img);
         echo "\nAnalysis Result:\n";
         print_r($result);
     } catch (Exception $e) {
