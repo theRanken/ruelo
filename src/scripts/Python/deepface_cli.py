@@ -31,8 +31,8 @@ def main():
             print(json.dumps({"error": "Usage: python deepface_cli.py [--compare img1 img2 threshold] [--analyze img] [--method opencv|onnx]"}))
             sys.exit(1)
 
-        # Get the method from command line or default to onnx
-        method = 'opencv' if '--method=onnx' in sys.argv else 'opencv'
+        # Get the method from command line or default to opencv
+        method = 'onnx' if '--method=onnx' in sys.argv else 'opencv'
         matcher = OpenCVFaceMatcher() if method == 'opencv' else OnnxFaceMatcher()
         
         # Remove method argument if it exists
