@@ -1,15 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import os
-
-# Suppress all stderr output (must happen before any other stderr-using code)
-sys.stderr = open(os.devnull, 'w')
-
-# Suppress TensorFlow and other noisy logs
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF logs
-os.environ["GLOG_minloglevel"] = "3"
-os.environ["ABSL_MIN_LOG_LEVEL"] = "3"
-
 import json
 import warnings
 import logging
@@ -31,12 +22,7 @@ def main():
             print(json.dumps({"error": "Usage: python deepface_cli.py [--compare img1 img2 threshold] [--analyze img] [--method opencv|onnx]"}))
             sys.exit(1)
 
-        # Get the method from command line or default to opencv
-        method = 'onnx' if '--method=onnx' in sys.argv else 'opencv'
-        matcher = OpenCVFaceMatcher() if method == 'opencv' else OnnxFaceMatcher()
-        
-        # Remove method argument if it exists
-        sys.argv = [arg for arg in sys.argv if not arg.startswith('--method=')]
+        matcher = OpenCVFaceMatcher()
 
         if sys.argv[1] == '--compare' and len(sys.argv) >= 4:
             image1_source = sys.argv[2]
