@@ -72,7 +72,7 @@ class DeepFace
             throw new \Exception("Script not found: {$this->scriptPath}");
         }
     }
-    public function compare($img1, $img2, $threshold = 0.4)
+    public function compare($img1, $img2, $threshold = null)
     {
         // Validate inputs
         if (empty($img1) || empty($img2)) {
@@ -84,13 +84,19 @@ class DeepFace
         if ($this->isFilePath($img2) && !file_exists($img2)) {
             return ['error' => 'Image 2 file not found'];
         }
+        // Fix: if threshold is null or empty, omit it from command to avoid passing empty string
+        $thresholdArg = '';
+        if ($threshold !== null && $threshold !== '') {
+            $thresholdArg = escapeshellarg($threshold);
+        }
+
         $cmd = sprintf(
             '%s %s --compare %s %s %s 2>&1',
             escapeshellarg($this->pythonPath),
             escapeshellarg($this->scriptPath),
             escapeshellarg($img1),
             escapeshellarg($img2),
-            escapeshellarg($threshold)
+            $thresholdArg
         );
         $output = shell_exec($cmd);
         if ($output === null) {
@@ -129,7 +135,7 @@ class DeepFace
         return $result;
     }
 
-    public static function compareImages($img1, $img2, $pythonPath = 'python', $scriptPath = __DIR__ . "/scripts/Python/deepface_cli.py", $threshold = 0.4)
+    public static function compareImages($img1, $img2, $pythonPath = 'python', $scriptPath = __DIR__ . "/scripts/Python/deepface_cli.py", $threshold = null)
     {
         $instance = new self($pythonPath, $scriptPath);
         return $instance->compare($img1, $img2, $threshold);

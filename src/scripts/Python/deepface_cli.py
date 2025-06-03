@@ -13,8 +13,8 @@ logging.getLogger().setLevel(logging.ERROR)
 for name in logging.root.manager.loggerDict:
     logging.getLogger(name).setLevel(logging.CRITICAL + 1)
 
-from matchers.onnx_lib import OnnxFaceMatcher
-from matchers.opencv_lib import OpenCVFaceMatcher
+from matchers.opencv import OpenCVFaceMatcher
+from matchers.mediapipe import MediaPipeFaceMatcher
 
 def main():
     try:
@@ -27,7 +27,7 @@ def main():
         if sys.argv[1] == '--compare' and len(sys.argv) >= 4:
             image1_source = sys.argv[2]
             image2_source = sys.argv[3]
-            threshold = float(sys.argv[4]) if len(sys.argv) > 4 else 0.4
+            threshold = float(sys.argv[4]) if len(sys.argv) > 4 else 0.6
             result = matcher.compare_faces(image1_source, image2_source, threshold)
         elif sys.argv[1] == '--analyze' and len(sys.argv) >= 3:
             image_source = sys.argv[2]
