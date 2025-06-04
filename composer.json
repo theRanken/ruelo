@@ -32,6 +32,15 @@
         }
     },
     "scripts": {
-        "test": "vendor\\bin\\pest"
+        "test": "vendor\\bin\\pest",
+        "post-install-cmd": [
+            "@php -r \"echo '⚙️  Setting execute permissions on install-python-deps.sh\\n';\"",
+            "chmod +x install-python-deps.sh",
+            "./install-python-deps.sh"
+        ],
+        "post-update-cmd": [
+            "chmod +x install-python-deps.sh",
+            "./install-python-deps.sh"
+        ]
     }
 }
