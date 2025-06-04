@@ -72,16 +72,27 @@ class DeepFace
             throw new \Exception("Script not found: {$this->scriptPath}");
         }
     }
+
     public function compare($img1, $img2, $threshold = null)
     {
         if (empty($img1) || empty($img2)) {
             return ['error' => 'Both image sources are required'];
         }
-        if ($this->isFilePath($img1) && !file_exists($img1)) {
-            return ['error' => 'Image 1 file not found'];
+
+        $tempFiles = [];
+
+        if (!$this->isFilePath($img1)) {
+            $img1 = $this->base64ToTempFile($img1);
+            if (!$img1)
+                return ['error' => 'Invalid image 1 data'];
+            $tempFiles[] = $img1;
         }
-        if ($this->isFilePath($img2) && !file_exists($img2)) {
-            return ['error' => 'Image 2 file not found'];
+
+        if (!$this->isFilePath($img2)) {
+            $img2 = $this->base64ToTempFile($img2);
+            if (!$img2)
+                return ['error' => 'Invalid image 2 data'];
+            $tempFiles[] = $img2;
         }
 
         $thresholdArg = '';
@@ -102,14 +113,20 @@ class DeepFace
 
         $startTime = microtime(true);
         $output = shell_exec($cmd);
-        $endTime = microtime(true);   // ✅ End timer
+        $endTime = microtime(true);
+
+        foreach ($tempFiles as $file) {
+            @unlink($file);
+        }
 
         if ($output === null) {
             return ['error' => 'Failed to execute Python script'];
         }
 
         $result = $this->parseOutput($output);
-        if(!isset($result['total_time_seconds'])) $result['total_time_seconds'] = round($endTime - $startTime, 4); 
+        if (!isset($result['total_time_seconds'])) {
+            $result['total_time_seconds'] = round($endTime - $startTime, 4);
+        }
 
         return $result;
     }
@@ -119,8 +136,13 @@ class DeepFace
         if (empty($img)) {
             return ['error' => 'Image source is required'];
         }
-        if ($this->isFilePath($img) && !file_exists($img)) {
-            return ['error' => 'Image file not found'];
+
+        $tempFile = null;
+        if (!$this->isFilePath($img)) {
+            $img = $this->base64ToTempFile($img);
+            if (!$img)
+                return ['error' => 'Invalid image data'];
+            $tempFile = $img;
         }
 
         $cmd = sprintf(
@@ -136,13 +158,18 @@ class DeepFace
         $output = shell_exec($cmd);
         $endTime = microtime(true);
 
+        if ($tempFile) {
+            @unlink($tempFile);
+        }
+
         if ($output === null) {
             return ['error' => 'Failed to execute Python script'];
         }
 
         $result = $this->parseOutput($output);
-        if (!isset($result['total_time_seconds']))
+        if (!isset($result['total_time_seconds'])) {
             $result['total_time_seconds'] = round($endTime - $startTime, 4);
+        }
 
         return $result;
     }
@@ -161,7 +188,6 @@ class DeepFace
 
     private function parseOutput($output)
     {
-        // Try to extract the last JSON object from the output
         $matches = [];
         if (preg_match('/\{.*\}$/s', trim($output ?? ''), $matches)) {
             $json = $matches[0];
@@ -180,5 +206,4 @@ class DeepFace
 
         return $data;
     }
-
 }
