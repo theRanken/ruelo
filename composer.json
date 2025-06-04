@@ -11,7 +11,8 @@
     ],
     "require": {
         "php": ">=7.2"
-    },    "autoload": {
+    },
+    "autoload": {
         "psr-4": {
             "Ruelo\\": "src/"
         }
@@ -29,5 +30,8 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true
         }
+    },
+    "scripts": {
+        "test": "vendor\\bin\\pest"
     }
 }

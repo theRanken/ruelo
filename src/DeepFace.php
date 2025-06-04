@@ -72,9 +72,8 @@ class DeepFace
             throw new \Exception("Script not found: {$this->scriptPath}");
         }
     }
-    public function compare($img1, $img2, $threshold = 0.4)
+    public function compare($img1, $img2, $threshold = null)
     {
-        // Validate inputs
         if (empty($img1) || empty($img2)) {
             return ['error' => 'Both image sources are required'];
         }
@@ -84,24 +83,37 @@ class DeepFace
         if ($this->isFilePath($img2) && !file_exists($img2)) {
             return ['error' => 'Image 2 file not found'];
         }
+
+        $thresholdArg = '';
+        if ($threshold !== null && $threshold !== '') {
+            $thresholdArg = escapeshellarg($threshold);
+        }
+
         $cmd = sprintf(
-            '%s %s --compare %s %s %s 2>&1',
+            'set TF_CPP_MIN_LOG_LEVEL=3 && %s %s --compare %s %s %s 2>&1',
             escapeshellarg($this->pythonPath),
             escapeshellarg($this->scriptPath),
             escapeshellarg($img1),
             escapeshellarg($img2),
-            escapeshellarg($threshold)
+            $thresholdArg
         );
+
+        putenv('TF_CPP_MIN_LOG_LEVEL=3');
+
+        $startTime = microtime(true);
         $output = shell_exec($cmd);
+        $endTime = microtime(true);   // ✅ End timer
+
         if ($output === null) {
             return ['error' => 'Failed to execute Python script'];
         }
-        $result = json_decode(trim($output), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return ['error' => 'Invalid JSON response: ' . $output];
-        }
+
+        $result = $this->parseOutput($output);
+        if(!isset($result['total_time_seconds'])) $result['total_time_seconds'] = round($endTime - $startTime, 4); 
+
         return $result;
     }
+
     public function analyze($img)
     {
         if (empty($img)) {
@@ -112,24 +124,30 @@ class DeepFace
         }
 
         $cmd = sprintf(
-            '%s %s --analyze %s 2>&1',
+            'set TF_CPP_MIN_LOG_LEVEL=3 && %s %s --analyze %s 2>&1',
             escapeshellarg($this->pythonPath),
             escapeshellarg($this->scriptPath),
             escapeshellarg($img)
         );
 
+        putenv('TF_CPP_MIN_LOG_LEVEL=3');
+
+        $startTime = microtime(true);
         $output = shell_exec($cmd);
+        $endTime = microtime(true);
+
         if ($output === null) {
             return ['error' => 'Failed to execute Python script'];
         }
-        $result = json_decode(trim($output), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return ['error' => 'Invalid JSON response: ' . $output];
-        }
+
+        $result = $this->parseOutput($output);
+        if (!isset($result['total_time_seconds']))
+            $result['total_time_seconds'] = round($endTime - $startTime, 4);
+
         return $result;
     }
 
-    public static function compareImages($img1, $img2, $pythonPath = 'python', $scriptPath = __DIR__ . "/scripts/Python/deepface_cli.py", $threshold = 0.4)
+    public static function compareImages($img1, $img2, $pythonPath = 'python', $scriptPath = __DIR__ . "/scripts/Python/deepface_cli.py", $threshold = null)
     {
         $instance = new self($pythonPath, $scriptPath);
         return $instance->compare($img1, $img2, $threshold);
@@ -143,13 +161,24 @@ class DeepFace
 
     private function parseOutput($output)
     {
-        $data = json_decode($output ?? '', true);
-        if (!$data) {
-            throw new \Exception('Invalid or empty response from Python script');
+        // Try to extract the last JSON object from the output
+        $matches = [];
+        if (preg_match('/\{.*\}$/s', trim($output ?? ''), $matches)) {
+            $json = $matches[0];
+            $data = json_decode($json, true);
+        } else {
+            $data = null;
         }
+
+        if (!$data) {
+            throw new \Exception('Invalid or empty response from Python script: ' . $output);
+        }
+
         if (isset($data['error'])) {
             throw new \Exception($data['error']);
         }
+
         return $data;
     }
+
 }
