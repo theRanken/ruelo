@@ -35,10 +35,6 @@ This package provides robust face recognition, verification, and analysis capabi
    ```bash
    composer require theranken/ruelo
    ```
-2. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
 
 ## Usage
 
@@ -94,7 +90,7 @@ $result = $deepface->analyze('path/to/image.jpg');
 
 // Analysis with specific models
 $models = ['age', 'gender', 'emotion'];
-$result = $deepface->analyze('path/to/image.jpg', $models);
+$result = $deepface->analyze('path/to/image.jpg');
 ```
 
 ### Customizing Python Path
