@@ -14,7 +14,7 @@ for name in logging.root.manager.loggerDict:
     logging.getLogger(name).setLevel(logging.CRITICAL + 1)
 
 from matchers.opencv import OpenCVFaceMatcher
-from matchers.mediapipe import MediaPipeFaceMatcher
+from matchers.deepface import DeepFaceMatcher
 
 def main():
     try:
@@ -22,12 +22,12 @@ def main():
             print(json.dumps({"error": "Usage: python deepface_cli.py [--compare img1 img2 threshold] [--analyze img] [--method opencv|onnx]"}))
             sys.exit(1)
 
-        matcher = OpenCVFaceMatcher()
+        matcher = DeepFaceMatcher()
 
         if sys.argv[1] == '--compare' and len(sys.argv) >= 4:
             image1_source = sys.argv[2]
             image2_source = sys.argv[3]
-            threshold = float(sys.argv[4]) if len(sys.argv) > 4 else 0.6
+            threshold = float(sys.argv[4]) if len(sys.argv) > 4 else None
             result = matcher.compare_faces(image1_source, image2_source, threshold)
         elif sys.argv[1] == '--analyze' and len(sys.argv) >= 3:
             image_source = sys.argv[2]

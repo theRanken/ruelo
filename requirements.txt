@@ -1,9 +1,12 @@
-opencv-python-headless
+opencv-python
 numpy
 onnx
 onnxruntime
 scipy
 requests
-tensorflow 
-# tensorflow-gpu 
-keras
+retina-face==0.0.17
+mediapipe
+tf-keras
+mtcnn
+deepface
+facenet-pytorch

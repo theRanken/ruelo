@@ -21,10 +21,11 @@ function verify() {
     $img2 = prompt("Enter path to second image: ");
     try {
         $result = DeepFace::compareImages($img1, $img2);
-        echo "\nResult: ".(!empty($result['verified']) ? 'Faces match!' : 'Faces do not match.')."\n";
         print_r($result);
     } catch (Exception $e) {
-        echo "Error: ".$e->getMessage()."\n";
+        print_r([
+            "message" => "Error: ".$e->getMessage()."\n",
+        ]);
     }
 }
 
