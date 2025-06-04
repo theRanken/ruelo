@@ -49,14 +49,22 @@ class DeepFace
                 }
                 $base64 = $parts[1];
             }
+
             $imageData = base64_decode($base64, true);
             if ($imageData === false) {
                 return false;
             }
-            $tempFile = tempnam(sys_get_temp_dir(), 'face_match_') . '.jpg';
+
+            $tempDir = __DIR__ . '/assets/temp';
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
+            $tempFile = $tempDir . '/face_match_' . uniqid() . '.jpg';
             if (file_put_contents($tempFile, $imageData) === false) {
                 return false;
             }
+
             return $tempFile;
         } catch (\Exception $e) {
             return false;
@@ -124,6 +132,7 @@ class DeepFace
         }
 
         $result = $this->parseOutput($output);
+        
         if (!isset($result['total_time_seconds'])) {
             $result['total_time_seconds'] = round($endTime - $startTime, 4);
         }

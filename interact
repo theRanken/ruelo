@@ -45,6 +45,37 @@ function analyze() {
     }
 }
 
+function test_base64()
+{
+    $file1 = __DIR__ . '/image1.txt'; // Contains base64 string
+    $file2 = __DIR__ . '/image2.txt'; // Contains base64 string
+
+    if (!file_exists($file1) || !file_exists($file2)) {
+        echo "One or both base64 files not found.\n";
+        return;
+    }
+
+    $base64Image1 = trim(file_get_contents($file1));
+    $base64Image2 = trim(file_get_contents($file2));
+
+    // Optionally, if they don't have the `data:image/...;base64,` prefix:
+    if (strpos($base64Image1, 'data:image/') !== 0) {
+        $base64Image1 = 'data:image/jpeg;base64,' . $base64Image1;
+    }
+    if (strpos($base64Image2, 'data:image/') !== 0) {
+        $base64Image2 = 'data:image/jpeg;base64,' . $base64Image2;
+    }
+
+    try {
+        $result = DeepFace::compareImages($base64Image1, $base64Image2);
+        print_r($result);
+    } catch (Exception $e) {
+        echo "Error: " . $e->getMessage() . "\n";
+    }
+}
+
+
+
 while (true) {
     $action = prompt("Choose action ([v]erify, [a]nalyze, [q]uit): ");
 
@@ -57,6 +88,9 @@ while (true) {
         case 'a':
         case 'analyze':
             analyze();
+            break;
+        case 'test_base64':
+            test_base64();
             break;
         case 'q':
         case 'exit':
