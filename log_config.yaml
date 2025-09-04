@@ -1,0 +1,27 @@
+version: 1
+formatters:
+  default:
+    format: "%(levelprefix)s %(asctime)s %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+handlers:
+  file:
+    class: logging.FileHandler
+    formatter: default
+    filename: src/logs/dev.log
+    mode: a
+loggers:
+  uvicorn:
+    handlers: [file]
+    level: INFO
+    propagate: no
+  uvicorn.error:
+    handlers: [file]
+    level: INFO
+    propagate: no
+  uvicorn.access:
+    handlers: [file]
+    level: INFO
+    propagate: no
+root:
+  handlers: [file]
+  level: INFO

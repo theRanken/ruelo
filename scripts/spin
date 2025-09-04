@@ -1,0 +1,12 @@
+<?php
+$python = 'python';
+$script = realpath(__DIR__ . '/../src/scripts/Python/df_service.py');
+if (!$script || !file_exists($script)) {
+    echo "Script not found: $script\n";
+    exit(1);
+}
+$cmd = "start \"FastAPI\" \"$python\" \"$script\"";
+echo "CMD: $cmd\n";
+$output = exec($cmd);
+echo "Output: $output\n";
+echo "FastAPI DeepFace server started.\n";
