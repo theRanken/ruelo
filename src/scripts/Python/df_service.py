@@ -6,7 +6,7 @@ A FastAPI server for DeepFace operations with singleton model loading and robust
 from fastapi import FastAPI, File, UploadFile, HTTPException, Body
 from fastapi.responses import JSONResponse
 from deepface import DeepFace
-import uvicorn, traceback, os, tempfile, io, uuid
+import uvicorn, traceback, os, socket
 from typing import Optional
 from PIL import Image
 
@@ -32,6 +32,16 @@ class DeepFaceSingleton:
         return self._models
 
 
+def is_uvicorn_running(host="127.0.0.1", port=4800):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.settimeout(1)
+            s.connect((host, port))
+            return True
+        except Exception:
+            return False
+
+
 # Instantiate singleton
 deepface_singleton = DeepFaceSingleton()
 
@@ -40,7 +50,7 @@ deepface_singleton = DeepFaceSingleton()
 async def verify(
     img1: str = Body(...),
     img2: str = Body(...),
-    model_name: Optional[str] = "VGG-Face",
+    model_name: Optional[str] = "Facenet512",
 ):
     try:
         # Load images from file paths
@@ -97,4 +107,9 @@ async def health():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=4800)
+
+    if not is_uvicorn_running():
+        log_config_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../../log_config.yaml")
+        )
+        uvicorn.run(app, host="0.0.0.0", port=4800, log_config=log_config_path)

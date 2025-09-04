@@ -1,11 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-// $pythonScript ='C:/Users/ranke/Projects/deepface-php/src/scripts/Python/df_service.py';
-// $cmd          = "python \"$pythonScript\" > /dev/null 2>&1 &";
-// exec($cmd);
-// exit;
-
 require __DIR__ . '/vendor/autoload.php';
 
 use Ruelo\DeepFace;

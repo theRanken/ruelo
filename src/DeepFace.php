@@ -20,9 +20,16 @@ class DeepFace
         DeepFace::log("Checking FastAPI health at $healthUrl");
         $health = @file_get_contents($healthUrl);
         if ($health === false) {
-            $pythonScript = __DIR__ . '/scripts/Python/df_service.py';
+            $python = 'python';
+            $pythonScript = realpath(__DIR__ . '/../src/scripts/Python/df_service.py');
             DeepFace::log("FastAPI not running. Attempting to start: $pythonScript");
-            $cmd = "python \"$pythonScript\" > /dev/null 2>&1 &";
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                // Windows
+                $cmd = "start /B \"FastAPI\" \"$python\" \"$pythonScript\"";
+            } else {
+                // Linux/macOS
+                $cmd = "$python \"$pythonScript\" > /dev/null 2>&1 &";
+            }
             exec($cmd, $output, $ret);
             DeepFace::log("Executed command: $cmd | Return: $ret | Output: " . implode(' ', $output));
 
@@ -31,7 +38,7 @@ class DeepFace
                 usleep(500000); // 0.5s
                 $health = @file_get_contents($healthUrl);
                 DeepFace::log("Waiting for FastAPI health... Status: " . ($health !== false ? 'OK' : 'NOT OK'));
-                if ($health !== false || (time() - $start) > 15) {
+                if ($health !== false || (time() - $start) > 20) {
                     break;
                 }
             }
@@ -47,7 +54,7 @@ class DeepFace
 
     public static function log($message)
     {
-        $logDir = __DIR__ . '/assets/temp';
+        $logDir = __DIR__ . '/logs';
         if (! is_dir($logDir)) {
             mkdir($logDir, 0755, true);
         }
