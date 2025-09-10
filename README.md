@@ -67,7 +67,9 @@ $deepface = new DeepFace('http://localhost:4800'); // URL of FastAPI server
 // Compare two image files
 $result = $deepface->compare('path/to/image1.jpg', 'path/to/image2.jpg');
 if (isset($result['result']['verified']) && $result['result']['verified']) {
-    echo "Match found! Confidence: " . ($result['result']['distance']) . "\n";
+    echo "Match found! Distance: " . $result['result']['distance'] . "\n";
+    echo "Threshold: " . $result['result']['threshold'] . "\n";
+    echo "Model: " . $result['result']['model'] . "\n";
 }
 
 // Using a custom threshold (0.0 to 1.0)
@@ -127,10 +129,34 @@ $result = DeepFace::compareImages('image1.jpg', 'image2.jpg', 'http://localhost:
 ### Face Comparison Results
 ```php
 [
-    'match' => true|false,          // Whether the faces match
-    'confidence' => 0.92,           // Match confidence (0 to 1)
-    'similarity' => 0.92,           // Similarity score (0 to 1)
-    'distance' => 0.08              // Normalized distance
+    'result' => [
+        'verified' => true|false,        // Whether the faces match (1 or 0)
+        'distance' => 0.0,               // Distance between faces (lower is more similar)
+        'threshold' => 0.3,              // Threshold used for verification
+        'model' => 'Facenet512',         // Model used for comparison
+        'detector_backend' => 'opencv',  // Face detection backend
+        'similarity_metric' => 'cosine', // Similarity metric used
+        'facial_areas' => [              // Detected facial areas
+            'img1' => [
+                'x' => 269,
+                'y' => 163,
+                'w' => 193,
+                'h' => 193,
+                'left_eye' => null,
+                'right_eye' => null
+            ],
+            'img2' => [
+                'x' => 269,
+                'y' => 163,
+                'w' => 193,
+                'h' => 193,
+                'left_eye' => null,
+                'right_eye' => null
+            ]
+        ],
+        'time' => 2.88                  // Processing time in seconds
+    ],
+    'total_time_seconds' => 2.9133     // Total time including overhead
 ]
 ```
 
