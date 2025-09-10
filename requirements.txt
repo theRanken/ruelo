@@ -1,3 +1,4 @@
+pyyaml
 deepface
 fastapi
 python-multipart

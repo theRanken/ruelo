@@ -69,8 +69,17 @@ async def verify(
             os.remove(img2)
         return JSONResponse(content={"result": result})
     except Exception as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        tb = traceback.extract_tb(e.__traceback__)
+        if tb:
+            last_frame = tb[-1]
+            error_info = {
+                "error": str(e),
+                "file": last_frame.filename,
+                "line": last_frame.lineno
+            }
+        else:
+            error_info = {"error": str(e)}
+        return JSONResponse(status_code=500, content=error_info)
 
 
 @app.post("/analyze")
@@ -95,8 +104,17 @@ async def analyze(
             os.remove(img)
         return JSONResponse(content={"result": result})
     except Exception as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        tb = traceback.extract_tb(e.__traceback__)
+        if tb:
+            last_frame = tb[-1]
+            error_info = {
+                "error": str(e),
+                "file": last_frame.filename,
+                "line": last_frame.lineno
+            }
+        else:
+            error_info = {"error": str(e)}
+        return JSONResponse(status_code=500, content=error_info)
 
 
 @app.get("/health")
@@ -110,6 +128,6 @@ if __name__ == "__main__":
 
     if not is_uvicorn_running():
         log_config_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../../log_config.yaml")
+            os.path.join(os.path.dirname(__file__), "../../../log_config.yaml")
         )
-        uvicorn.run(app, host="0.0.0.0", port=4800, log_config=log_config_path)
+        uvicorn.run(app, host="0.0.0.0", port=4800, log_config=log_config_path, access_log=False)
