@@ -1,5 +1,6 @@
 pyyaml
 deepface
+tf_keras
 fastapi
 python-multipart
 uvicorn
