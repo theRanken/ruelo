@@ -5,13 +5,13 @@
  * This script can be used in any application that uses the DeepFace library.
  */
 
-$apiUrl = 'http://127.0.0.1:4800';
+$apiUrl    = 'http://127.0.0.1:4800';
 $healthUrl = rtrim($apiUrl, '/') . '/health';
 
 echo "Checking FastAPI health at $healthUrl\n";
 $health = @file_get_contents($healthUrl);
 if ($health === false) {
-    $python = 'python';
+    $python       = 'python';
     $pythonScript = realpath(__DIR__ . '/../src/scripts/Python/df_service.py');
     echo "FastAPI not running. Attempting to start: $pythonScript\n";
     if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
@@ -19,7 +19,7 @@ if ($health === false) {
         $cmd = "start /B \"FastAPI\" \"$python\" \"$pythonScript\"";
     } else {
         // Linux/macOS
-        $cmd = "$python \"$pythonScript\" > /dev/null 2>&1 &";
+        $cmd = "QT_QPA_PLATFORM=offscreen MPLBACKEND=Agg $python \"$pythonScript\" > /dev/null 2>&1 &";
     }
     exec($cmd, $output, $ret);
     echo "Executed command: $cmd | Return: $ret | Output: " . implode(' ', $output) . "\n";

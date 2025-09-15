@@ -33,7 +33,7 @@ This package provides robust face recognition, verification, and analysis capabi
 - uvicorn
 - pillow
 - numpy
-- opencv-python
+- opencv-python-headless
 - (see requirements.txt)
 
 ## Installation
