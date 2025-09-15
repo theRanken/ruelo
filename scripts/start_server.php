@@ -21,20 +21,21 @@ if ($health === false) {
         // Linux/macOS
         $cmd = "QT_QPA_PLATFORM=offscreen MPLBACKEND=Agg $python \"$pythonScript\" > /dev/null 2>&1 &";
     }
-    exec($cmd, $output, $ret);
+    $shell = exec($cmd, $output, $ret);
     echo "Executed command: $cmd | Return: $ret | Output: " . implode(' ', $output) . "\n";
 
     $start = time();
     while (true) {
-        usleep(500000); // 0.5s
+        usleep(10000000); // 1s
         $health = @file_get_contents($healthUrl);
         echo "Waiting for FastAPI health... Status: " . ($health !== false ? 'OK' : 'NOT OK') . "\n";
-        if ($health !== false || (time() - $start) > 20) {
+        if ($health !== false || (time() - $start) > 30) {
             break;
         }
     }
     if ($health === false) {
-        echo "FastAPI server failed to start or is unreachable after 20 seconds.\n";
+        echo "FastAPI server failed to start or is unreachable after 30 seconds.\n";
+        echo $shell;
         exit(1);
     } else {
         echo "FastAPI server is up and healthy.\n";
