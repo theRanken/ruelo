@@ -27,3 +27,4 @@ eks-bootstrap/clusterissue.yaml
 !.elasticbeanstalk/*.global.yml
 .venv
 .env
+/env
