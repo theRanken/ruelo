@@ -29,6 +29,7 @@ eks-bootstrap/clusterissue.yaml
 .env
 /env
 /venv
+/wsl_env
 
 src/assets/temp/
 
