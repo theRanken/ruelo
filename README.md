@@ -48,8 +48,33 @@ This package provides robust face recognition, verification, and analysis capabi
     ```
 
 3. **Start the FastAPI server:**
+    You can start the server automatically (it will start when needed) or manually:
+
+    **Automatic (recommended):** The server starts automatically when you use the library methods.
+
+    **Manual start:** Run the provided script from the library's directory:
     ```bash
-    python src/scripts/Python/deepface_api_service.py
+    php scripts/start_server.php
+    ```
+
+    If installed via Composer in another application (e.g., Laravel), run:
+    ```bash
+    php vendor/theranken/ruelo/scripts/start_server.php
+    ```
+
+    To stop the server manually:
+    ```bash
+    php scripts/stop_server.php
+    ```
+
+    Or if installed via Composer:
+    ```bash
+    php vendor/theranken/ruelo/scripts/stop_server.php
+    ```
+
+    Or directly:
+    ```bash
+    python src/scripts/Python/df_service.py
     ```
 
 4. **(Optional) Docker usage:**
