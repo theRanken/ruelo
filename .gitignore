@@ -30,6 +30,8 @@ eks-bootstrap/clusterissue.yaml
 /env
 /venv
 
+src/assets/temp/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -67,6 +69,7 @@ MANIFEST
 
 # PHP additional
 *.log
+!src/logs/deepface.log
 cache/
 temp/
 .DS_Store
