@@ -5,15 +5,17 @@
 A powerful face recognition and analysis library for PHP using MediaPipe, with support for file paths, base64 strings, and data URLs.
 
 ## What is this?
-This package provides robust face recognition, verification, and analysis capabilities using MediaPipe and deep learning models. It supports multiple input formats and provides comprehensive error handling and validation.
+This package provides robust face recognition, verification, and analysis capabilities using DeepFace and deep learning models. It supports multiple input formats and provides comprehensive error handling and validation. The backend is powered by a persistent Python FastAPI server for high performance and reliability.
 
 ## Features
 - **Face Verification:** Compare faces between two images with confidence scores
+- **Face Analysis:** Get age, gender, emotion, and race predictions
 - **Multiple Input Formats:** Support for file paths, base64 strings, and data URLs
 - **Base64 Utilities:** Built-in methods for converting between formats
 - **Input Validation:** Comprehensive error checking and validation
 - **Detailed Results:** Get match status, confidence scores, and similarity metrics
 - **Error Handling:** Clear error messages and consistent error format
+- **FastAPI Backend:** Persistent Python API server for high performance
 
 ## Requirements
 
@@ -24,21 +26,59 @@ This package provides robust face recognition, verification, and analysis capabi
 - Composer (for PHP dependencies)
 
 ### Python Requirements
-- Python 3.6 or higher
-- mediapipe
-- opencv-python
+- Python 3.8 or higher
+- deepface
+- fastapi
+- python-multipart
+- uvicorn
+- pillow
 - numpy
-- scipy
+- opencv-python
+- (see requirements.txt)
 
 ## Installation
 1. **Install the PHP library:**
-   ```bash
-   composer require theranken/ruelo
-   ```
+    ```bash
+    composer require theranken/ruelo
+    ```
+
 2. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. **Start the FastAPI server:**
+    You can start the server automatically (it will start when needed) or manually:
+
+    **Automatic (recommended):** The server starts automatically when you use the library methods.
+
+    **Manual start:** Run the provided script from the library's directory:
+    ```bash
+    php scripts/start_server.php
+    ```
+
+    If installed via Composer in another application (e.g., Laravel), run:
+    ```bash
+    php vendor/theranken/ruelo/scripts/start_server.php
+    ```
+
+    To stop the server manually:
+    ```bash
+    php scripts/stop_server.php
+    ```
+
+    Or if installed via Composer:
+    ```bash
+    php vendor/theranken/ruelo/scripts/stop_server.php
+    ```
+
+    Or directly:
+    ```bash
+    python src/scripts/Python/df_service.py
+    ```
+
+4. **(Optional) Docker usage:**
+    See below for Docker instructions.
 
 ## Usage
 
@@ -47,12 +87,14 @@ This package provides robust face recognition, verification, and analysis capabi
 ```php
 use Ruelo\DeepFace;
 
-$deepface = new DeepFace();
+$deepface = new DeepFace('http://localhost:4800'); // URL of FastAPI server
 
 // Compare two image files
 $result = $deepface->compare('path/to/image1.jpg', 'path/to/image2.jpg');
-if ($result['match']) {
-    echo "Match found! Confidence: " . ($result['confidence'] * 100) . "%\n";
+if (isset($result['result']['verified']) && $result['result']['verified']) {
+    echo "Match found! Distance: " . $result['result']['distance'] . "\n";
+    echo "Threshold: " . $result['result']['threshold'] . "\n";
+    echo "Model: " . $result['result']['model'] . "\n";
 }
 
 // Using a custom threshold (0.0 to 1.0)
@@ -64,7 +106,7 @@ $result = $deepface->compare('image1.jpg', 'image2.jpg', 0.5);
 ```php
 use Ruelo\DeepFace;
 
-$deepface = new DeepFace();
+$deepface = new DeepFace('http://localhost:4800');
 
 // Convert an image file to base64
 $base64 = $deepface->fileToBase64('path/to/image.jpg');
@@ -87,33 +129,14 @@ $result = $deepface->compare($dataUrl, 'image2.jpg');
 ```php
 use Ruelo\DeepFace;
 
-$deepface = new DeepFace();
+$deepface = new DeepFace('http://localhost:4800');
 
 // Basic analysis
 $result = $deepface->analyze('path/to/image.jpg');
-
-// Analysis with specific models
-$models = ['age', 'gender', 'emotion'];
-$result = $deepface->analyze('path/to/image.jpg', $models);
 ```
 
-### Customizing Python Path
-
-```php
-use Ruelo\DeepFace;
-
-// Custom Python interpreter or script path
-$deepface = new DeepFace('python3', '/custom/path/deepface_cli.py');
-
-// Or using static methods
-$result = DeepFace::compareImages(
-    'img1.jpg',
-    'img2.jpg',
-    'python3',
-    '/custom/path/deepface_cli.py',
-    0.4  // threshold
-);
-```
+// The FastAPI server URL can be customized if needed:
+$deepface = new DeepFace('http://localhost:4800');
 
 ### Using Static Helper Methods
 
@@ -121,25 +144,44 @@ $result = DeepFace::compareImages(
 use Ruelo\DeepFace;
 
 // Quick face comparison
-$result = DeepFace::compareImages('image1.jpg', 'image2.jpg');
-
+$result = DeepFace::compareImages('image1.jpg', 'image2.jpg', 'http://localhost:8000');
 ```
 
-### Interactive Usage
-You can interact with the library using the CLI tool:
-```bash
-php interact
-```
+// The CLI tool is no longer required. All operations are handled via the FastAPI server.
 
 ## Results Format
 
 ### Face Comparison Results
 ```php
 [
-    'match' => true|false,          // Whether the faces match
-    'confidence' => 0.92,           // Match confidence (0 to 1)
-    'similarity' => 0.92,           // Similarity score (0 to 1)
-    'distance' => 0.08              // Normalized distance
+    'result' => [
+        'verified' => true|false,        // Whether the faces match (1 or 0)
+        'distance' => 0.0,               // Distance between faces (lower is more similar)
+        'threshold' => 0.3,              // Threshold used for verification
+        'model' => 'Facenet512',         // Model used for comparison
+        'detector_backend' => 'opencv',  // Face detection backend
+        'similarity_metric' => 'cosine', // Similarity metric used
+        'facial_areas' => [              // Detected facial areas
+            'img1' => [
+                'x' => 269,
+                'y' => 163,
+                'w' => 193,
+                'h' => 193,
+                'left_eye' => null,
+                'right_eye' => null
+            ],
+            'img2' => [
+                'x' => 269,
+                'y' => 163,
+                'w' => 193,
+                'h' => 193,
+                'left_eye' => null,
+                'right_eye' => null
+            ]
+        ],
+        'time' => 2.88                  // Processing time in seconds
+    ],
+    'total_time_seconds' => 2.9133     // Total time including overhead
 ]
 ```
 
@@ -177,7 +219,7 @@ Common error messages:
 
 ## How It Works
 1. The PHP library validates inputs and handles format conversions
-2. A Python script using MediaPipe processes the images
+2. A Python FastAPI server using DeepFace processes the images
 3. Results are returned as JSON and parsed into PHP arrays
 4. Comprehensive error handling ensures reliable operation
 
@@ -194,9 +236,21 @@ Common error messages:
 - Check that data URLs include the correct MIME type
 
 ### Docker Usage
-If using Python 3 in Docker, you might need to symlink python3:
-```shell
-RUN ln -s /usr/bin/python3 /usr/bin/python
+You can run the FastAPI server in a Docker container for production use. Example Dockerfile:
+
+```Dockerfile
+FROM python:3.10-slim
+WORKDIR /app
+COPY . /app
+RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 8000
+CMD ["python", "src/scripts/Python/deepface_api_service.py"]
+```
+
+Build and run:
+```bash
+docker build -t deepface-api .
+docker run -p 8000:8000 deepface-api
 ```
 
 ## License
@@ -204,4 +258,4 @@ MIT
 
 ---
 
-**Built with ❤️ using MediaPipe and PHP**
+**Built with ❤️ using DeepFace, FastAPI, and PHP**

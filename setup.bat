@@ -1,10 +1,15 @@
-@echo off
-echo Installing Python dependencies...
-pip install -r requirements.txt
+#!/bin/bash
 
-echo.
-echo Downloading ONNX models...
-python src/scripts/Python/download_models.py
+echo "🔧 Installing Python dependencies from requirements.txt..."
 
-echo.
-echo Setup complete!
+# Optionally activate a virtual environment here if needed
+# source venv/bin/activate
+
+if [ -f requirements.txt ]; then
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    echo "✅ Python dependencies installed successfully."
+else
+    echo "❌ requirements.txt not found!"
+    exit 1
+fi
