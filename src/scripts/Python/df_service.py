@@ -6,7 +6,7 @@ A FastAPI server for DeepFace operations with singleton model loading and robust
 from fastapi import FastAPI, File, UploadFile, HTTPException, Body
 from fastapi.responses import JSONResponse
 from deepface import DeepFace
-import uvicorn, traceback, os, socket
+import uvicorn, traceback, os, socket, yaml
 from typing import Optional
 from PIL import Image
 
@@ -130,4 +130,11 @@ if __name__ == "__main__":
         log_config_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "../../../log_config.yaml")
         )
-        uvicorn.run(app, host="0.0.0.0", port=4800, log_config=log_config_path, access_log=False)
+        with open(log_config_path, 'r') as f:
+            log_config = yaml.safe_load(f)
+        # Modify the filename to absolute path
+        log_file_path = os.path.join(os.getcwd(), "src", "logs", "deepface.log")
+        log_config['handlers']['file']['filename'] = log_file_path
+        # Ensure the logs directory exists
+        os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+        uvicorn.run(app, host="0.0.0.0", port=4800, log_config=log_config, access_log=False)
