@@ -21,16 +21,19 @@ class DeepFaceSingleton:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             try:
-                # Load models once for all requests
+                # Load Facenet512 with ONNX backend
+                cls._models = DeepFace.build_model("Facenet512")
+                print("✅ DeepFace model loaded (ONNX backend)")
+            except ImportError as e:
+                print("⚠️ TensorFlow not found — using ONNXRuntime backend")
+                os.environ["DEEPFACE_BACKEND"] = "onnx"
                 cls._models = DeepFace.build_model("Facenet512")
             except Exception as e:
-                print(f"Error loading DeepFace models: {e}")
+                print(f"❌ Error loading DeepFace model: {e}")
                 cls._models = None
         return cls._instance
-
     def get_models(self):
         return self._models
-
 
 def is_uvicorn_running(host="127.0.0.1", port=4800):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
