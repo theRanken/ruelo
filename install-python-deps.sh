@@ -2,8 +2,8 @@
 
 echo "🔧 Installing Python dependencies from requirements.txt..."
 
-# Optionally activate a virtual environment here if needed
-# source venv/bin/activate
+# Activate the virtual environment
+source env/Scripts/activate
 
 if [ -f requirements.txt ]; then
     pip install --upgrade pip

@@ -5,9 +5,11 @@
 A powerful face recognition and analysis library for PHP using MediaPipe, with support for file paths, base64 strings, and data URLs.
 
 ## What is this?
+
 This package provides robust face recognition, verification, and analysis capabilities using DeepFace and deep learning models. It supports multiple input formats and provides comprehensive error handling and validation. The backend is powered by a persistent Python FastAPI server for high performance and reliability.
 
 ## Features
+
 - **Face Verification:** Compare faces between two images with confidence scores
 - **Face Analysis:** Get age, gender, emotion, and race predictions
 - **Multiple Input Formats:** Support for file paths, base64 strings, and data URLs
@@ -20,12 +22,14 @@ This package provides robust face recognition, verification, and analysis capabi
 ## Requirements
 
 ### PHP Requirements
+
 - PHP 7.2 or higher
 - php-fileinfo extension
 - php-json extension
 - Composer (for PHP dependencies)
 
 ### Python Requirements
+
 - Python 3.8 or higher
 - deepface
 - fastapi
@@ -37,12 +41,15 @@ This package provides robust face recognition, verification, and analysis capabi
 - (see requirements.txt)
 
 ## Installation
+
 1. **Install the PHP library:**
+
     ```bash
     composer require theranken/ruelo
     ```
 
 2. **Install Python dependencies:**
+
     ```bash
     pip install -r requirements.txt
     ```
@@ -53,28 +60,33 @@ This package provides robust face recognition, verification, and analysis capabi
     **Automatic (recommended):** The server starts automatically when you use the library methods.
 
     **Manual start:** Run the provided script from the library's directory:
+
     ```bash
     php scripts/start_server.php
     ```
 
     If installed via Composer in another application (e.g., Laravel), run:
+
     ```bash
     php vendor/theranken/ruelo/scripts/start_server.php
     ```
 
     To stop the server manually:
+
     ```bash
     php scripts/stop_server.php
     ```
 
     Or if installed via Composer:
+
     ```bash
     php vendor/theranken/ruelo/scripts/stop_server.php
     ```
 
     Or directly:
+
     ```bash
-    python src/scripts/Python/df_service.py
+    python src/scripts/df_service.py
     ```
 
 4. **(Optional) Docker usage:**
@@ -133,10 +145,11 @@ $deepface = new DeepFace('http://localhost:4800');
 
 // Basic analysis
 $result = $deepface->analyze('path/to/image.jpg');
+
 ```
 
 // The FastAPI server URL can be customized if needed:
-$deepface = new DeepFace('http://localhost:4800');
+$deepface = new DeepFace('<http://localhost:4800>');
 
 ### Using Static Helper Methods
 
@@ -152,6 +165,7 @@ $result = DeepFace::compareImages('image1.jpg', 'image2.jpg', 'http://localhost:
 ## Results Format
 
 ### Face Comparison Results
+
 ```php
 [
     'result' => [
@@ -186,6 +200,7 @@ $result = DeepFace::compareImages('image1.jpg', 'image2.jpg', 'http://localhost:
 ```
 
 ### Analysis Results
+
 ```php
 [
     'age' => 25,
@@ -204,6 +219,7 @@ $result = DeepFace::compareImages('image1.jpg', 'image2.jpg', 'http://localhost:
 ```
 
 ### Error Format
+
 ```php
 [
     'error' => 'Error message description'
@@ -211,6 +227,7 @@ $result = DeepFace::compareImages('image1.jpg', 'image2.jpg', 'http://localhost:
 ```
 
 Common error messages:
+
 - 'Both image sources are required'
 - 'Image file not found'
 - 'Failed to execute Python script'
@@ -218,6 +235,7 @@ Common error messages:
 - 'Database path not found'
 
 ## How It Works
+
 1. The PHP library validates inputs and handles format conversions
 2. A Python FastAPI server using DeepFace processes the images
 3. Results are returned as JSON and parsed into PHP arrays
@@ -226,16 +244,19 @@ Common error messages:
 ## Troubleshooting
 
 ### Installation Issues
+
 - Ensure Python 3.6+ is installed and accessible
 - Install all required Python packages: `pip install -r requirements.txt`
 - Check file permissions for the Python script
 
 ### Input Problems
+
 - Verify image files exist and are readable
 - Ensure base64 strings are properly formatted
 - Check that data URLs include the correct MIME type
 
 ### Docker Usage
+
 You can run the FastAPI server in a Docker container for production use. Example Dockerfile:
 
 ```Dockerfile
@@ -248,14 +269,16 @@ CMD ["python", "src/scripts/Python/deepface_api_service.py"]
 ```
 
 Build and run:
+
 ```bash
 docker build -t deepface-api .
 docker run -p 8000:8000 deepface-api
 ```
 
 ## License
+
 MIT
 
 ---
 
-**Built with ❤️ using DeepFace, FastAPI, and PHP**
+## Built with ❤️ using DeepFace, FastAPI, and PHP**

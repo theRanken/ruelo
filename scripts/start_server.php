@@ -12,7 +12,7 @@ echo "Checking FastAPI health at $healthUrl\n";
 $health = @file_get_contents($healthUrl);
 if ($health === false) {
     $python       = 'python';
-    $pythonScript = realpath(__DIR__ . '/../src/scripts/Python/df_service.py');
+    $pythonScript = realpath(__DIR__ . '/../src/scripts/df_service.py');
     echo "FastAPI not running. Attempting to start: $pythonScript\n";
     if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
         // Windows
