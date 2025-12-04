@@ -1,297 +1,294 @@
 <?php
+
 namespace Ruelo;
 
 class DeepFace
 {
+    /**
+     * Base URL of the Python DeepFace API.
+     * @var string
+     */
+    protected static string $apiUrl = 'http://127.0.0.1:4800';
 
-    private $apiUrl;
-    private static $defaultApiUrl = 'http://127.0.0.1:4800';
-    private static $serverStarted = false;
+    /**
+     * Has the server health check / auto-start been attempted for this PHP process?
+     * @var bool
+     */
+    protected static bool $serverChecked = false;
 
-    public function __construct($apiUrl = null)
+    /**
+     * Enable or disable logging.
+     * @var bool
+     */
+    public static bool $debug = false;
+
+    // ─────────────────────────────────────────
+    // Config
+    // ─────────────────────────────────────────
+
+    /**
+     * Set the base URL for the DeepFace API (e.g. from env).
+     */
+    public static function setApiUrl(string $apiUrl): void
     {
-        $this->apiUrl = rtrim($apiUrl ?? self::$defaultApiUrl, '/');
+        self::$apiUrl = rtrim($apiUrl, '/');
     }
 
-    private static function startServerIfNeeded($apiUrl = null)
-    {
-        $url       = $apiUrl ?? self::$defaultApiUrl;
-        $healthUrl = rtrim($url, '/') . '/health';
-        DeepFace::log("Checking FastAPI health at $healthUrl");
-        $health = @file_get_contents($healthUrl);
-        if ($health === false) {
-            $python       = 'python';
-            $pythonScript = realpath(__DIR__ . '/../src/scripts/Python/df_service.py');
-            DeepFace::log("FastAPI not running. Attempting to start: $pythonScript");
-            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-                // Windows
-                $cmd = "start /B \"FastAPI\" \"$python\" \"$pythonScript\"";
-            } else {
-                // Linux/macOS
-                $cmd = "$python \"$pythonScript\" > /dev/null 2>&1 &";
-            }
-            exec($cmd, $output, $ret);
-            DeepFace::log("Executed command: $cmd | Return: $ret | Output: " . implode(' ', $output));
+    // ─────────────────────────────────────────
+    // Public STATIC API (drop-in)
+    // ─────────────────────────────────────────
 
-            $start = time();
-            while (true) {
-                usleep(500000); // 0.5s
-                $health = @file_get_contents($healthUrl);
-                DeepFace::log("Waiting for FastAPI health... Status: " . ($health !== false ? 'OK' : 'NOT OK'));
-                if ($health !== false || (time() - $start) > 20) {
-                    break;
-                }
-            }
-            if ($health === false) {
-                DeepFace::log("FastAPI server failed to start or is unreachable after 15 seconds.");
-            } else {
-                DeepFace::log("FastAPI server is up and healthy.");
-            }
-        } else {
-            DeepFace::log("FastAPI server is already running.");
-        }
-    }
-
-    public static function log($message)
-    {
-        $logDir = __DIR__ . '/logs';
-        if (! is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
-        }
-        $logFile   = $logDir . '/deepface.log';
-        $timestamp = date('Y-m-d H:i:s');
-        file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
-    }
-
-    private function isFilePath($input)
-    {
-        if (strpos($input, 'data:image/') === 0) {
-            return false;
-        }
-        if (strpos($input, '/') !== false || strpos($input, '\\') !== false) {
-            return true;
-        }
-        if (preg_match('/\.(jpg|jpeg|png|gif|bmp|webp)$/i', $input)) {
-            return true;
-        }
-        if (strlen($input) > 1000 && preg_match('/^[A-Za-z0-9+\/]+=*$/', $input)) {
-            return false;
-        }
-        return true;
-    }
-
-    public function fileToBase64($filePath)
-    {
-        if (! file_exists($filePath)) {
-            return false;
-        }
-        $imageData = file_get_contents($filePath);
-        if ($imageData === false) {
-            return false;
-        }
-        $finfo    = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_buffer($finfo, $imageData);
-        finfo_close($finfo);
-        return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-    }
-
-    public function base64ToTempFile($base64)
-    {
-        try {
-            if (strpos($base64, 'data:image/') === 0) {
-                $parts = explode(',', $base64, 2);
-                if (count($parts) !== 2) {
-                    return false;
-                }
-                $base64 = $parts[1];
-            }
-
-            $imageData = base64_decode($base64, true);
-            if ($imageData === false) {
-                return false;
-            }
-
-            $tempDir = __DIR__ . '/assets/temp';
-            if (! is_dir($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
-
-            $tempFile = $tempDir . '/face_match_' . uniqid() . '.jpg';
-            if (file_put_contents($tempFile, $imageData) === false) {
-                return false;
-            }
-
-            return $tempFile;
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-    public function compare($img1, $img2, $threshold = null)
+    /**
+     * Compare two faces.
+     *
+     * @param string      $img1      Path, URL or base64
+     * @param string      $img2      Path, URL or base64
+     * @param float|null  $threshold Optional threshold
+     * @return array
+     */
+    public static function compare($img1, $img2, $threshold = 0.6): array
     {
         if (empty($img1) || empty($img2)) {
             return ['error' => 'Both image sources are required'];
         }
 
-        DeepFace::log("compare() called with img1: $img1, img2: $img2, threshold: $threshold");
-        self::startServerIfNeeded($this->apiUrl);
-        $startTime = microtime(true);
-        $result    = null;
+        self::ensureServerRunning();
+
+        $start = microtime(true);
+
         try {
-            $url    = $this->apiUrl . '/verify';
-            $fields = [
-                'model_name' => 'VGG-Face',
-                'img1'       => $this->prepareCurlFile($img1),
-                'img2'       => $this->prepareCurlFile($img2),
-
+            $payload = [
+                'img1'       => self::normalizeImageInput($img1),
+                'img2'       => self::normalizeImageInput($img2),
+                'model_name' => 'Facenet512', // faster than Facenet512
             ];
+
             if ($threshold !== null) {
-                $fields['threshold'] = $threshold;
+                $payload['threshold'] = (float) $threshold;
             }
-            $files = [
 
-            ];
-            DeepFace::log("Sending POST to $url with fields: " . json_encode($fields));
-            $response = $this->curlPost($url, $fields, $files);
-            DeepFace::log("Received response: $response");
-            $result = json_decode($response, true);
-        } catch (\Exception $e) {
-            DeepFace::log("Error in compare(): " . $e->getMessage());
-            $result = ['error' => $e->getMessage()];
+            $response = self::postJson('/verify', $payload);
+        } catch (\Throwable $e) {
+            $response = ['error' => $e->getMessage()];
         }
-        $endTime = microtime(true);
-        if (! isset($result['total_time_seconds'])) {
-            $result['total_time_seconds'] = round($endTime - $startTime, 4);
-        }
-        return $result;
+
+        $response['total_time_seconds'] = round(microtime(true) - $start, 4);
+
+        return $response;
     }
 
-    public function analyze($img)
+    /**
+     * Analyze one face (age, gender, emotion, race).
+     *
+     * @param string $img Path, URL or base64
+     * @return array
+     */
+    public static function analyze($img): array
     {
         if (empty($img)) {
             return ['error' => 'Image source is required'];
         }
-        DeepFace::log("analyze() called with img: $img");
-        self::startServerIfNeeded($this->apiUrl);
-        $startTime = microtime(true);
-        $result    = null;
+
+        self::ensureServerRunning();
+
+        $start = microtime(true);
+
         try {
-            $url    = $this->apiUrl . '/analyze';
-            $fields = [
-                'actions'    => "['age', 'gender', 'emotion', 'race']",
-                'model_name' => 'VGG-Face',
-                'img'        => $this->prepareCurlFile($img),
-
+            $payload = [
+                'img'     => self::normalizeImageInput($img),
+                'actions' => ['age', 'gender', 'emotion', 'race'],
             ];
-            $files = [
 
-            ];
-            DeepFace::log("Sending POST to $url with fields: " . json_encode($fields));
-            $response = $this->curlPost($url, $fields, $files);
-            DeepFace::log("Received response: $response");
-            $result = json_decode($response, true);
-        } catch (\Exception $e) {
-            DeepFace::log("Error in analyze(): " . $e->getMessage());
-            $result = ['error' => $e->getMessage()];
+            $response = self::postJson('/analyze', $payload);
+        } catch (\Throwable $e) {
+            $response = ['error' => $e->getMessage()];
         }
-        $endTime = microtime(true);
-        if (! isset($result['total_time_seconds'])) {
-            $result['total_time_seconds'] = round($endTime - $startTime, 4);
-        }
-        return $result;
-    }
 
-    public static function compareImages($img1, $img2, $apiUrl = null, $threshold = null)
-    {
-        $instance = new self($apiUrl ?? self::$defaultApiUrl);
-        return $instance->compare($img1, $img2, $threshold);
-    }
+        $response['total_time_seconds'] = round(microtime(true) - $start, 4);
 
-    public static function analyzeImage($img, $apiUrl = null)
-    {
-        $instance = new self($apiUrl ?? self::$defaultApiUrl);
-        return $instance->analyze($img);
-    }
-
-    private function prepareCurlFile($input)
-    {
-        // If it's a remote URL, download to temp file
-        if (filter_var($input, FILTER_VALIDATE_URL)) {
-            $tmpDir = __DIR__ . '/assets/temp';
-            if (! is_dir($tmpDir)) {
-                mkdir($tmpDir, 0755, true);
-            }
-            $tmp     = $tmpDir . '/face_match_url_' . uniqid() . '.jpg';
-            $imgData = @file_get_contents($input);
-            if ($imgData === false) {
-                DeepFace::log("prepareCurlFile: failed to download remote URL $input");
-                throw new \Exception('Failed to download remote image: ' . $input);
-            }
-            file_put_contents($tmp, $imgData);
-            DeepFace::log("prepareCurlFile: downloaded remote URL $input to $tmp");
-            return $tmp;
-        }
-        // If it's a file path
-        if ($this->isFilePath($input)) {
-            if (! file_exists($input)) {
-                DeepFace::log("prepareCurlFile: file does not exist: $input");
-                throw new \Exception('File does not exist: ' . $input);
-            }
-            DeepFace::log("prepareCurlFile: using file path $input");
-            return $input;
-        }
-        // Otherwise, treat as base64
-        $tmp = $this->base64ToTempFile($input);
-        DeepFace::log("prepareCurlFile: created temp file $tmp from base64");
-        if (! $tmp) {
-            DeepFace::log("prepareCurlFile: failed to create temp file from base64");
-            throw new \Exception('Invalid image data');
-        }
-        // Always return the file path for FastAPI
-        return $tmp;
-    }
-
-    private function curlPost($url, $fields, $files)
-    {
-        DeepFace::log("curlPost: POST $url");
-        $ch = curl_init();
-        // Always send JSON data
-        $jsonData = json_encode($fields);
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $response = curl_exec($ch);
-        if (curl_errno($ch)) {
-            $error_msg = curl_error($ch);
-            DeepFace::log("curlPost: Curl error: $error_msg");
-            curl_close($ch);
-            throw new \Exception('Curl error: ' . $error_msg);
-        }
-        curl_close($ch);
-        DeepFace::log("curlPost: Response: $response");
         return $response;
     }
 
-    private function parseOutput($output)
+    // ─────────────────────────────────────────
+    // Internal STATIC helpers (replacing old ones)
+    // ─────────────────────────────────────────
+
+    /**
+     * Ensure the Python server is running.
+     * Only checks / tries to spawn ONCE per PHP process.
+     */
+    protected static function ensureServerRunning(): void
     {
-        $matches = [];
-        if (preg_match('/\{.*\}$/s', trim($output ?? ''), $matches)) {
-            $json = $matches[0];
-            $data = json_decode($json, true);
+        if (self::$serverChecked) {
+            return;
+        }
+        self::$serverChecked = true;
+
+        $healthUrl = self::$apiUrl . '/health';
+
+        // quick health check
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 0.5,
+            ],
+        ]);
+
+        $health = @file_get_contents($healthUrl, false, $context);
+        if ($health !== false) {
+            self::log('DeepFace API already running.');
+            return;
+        }
+
+        // Optional: try to start the server in the background
+        // Adjust the path to df_service.py as needed
+        $python = PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
+        $script = __DIR__ . DIRECTORY_SEPARATOR . 'scripts/df_service.py';
+
+        if (!file_exists($script)) {
+            self::log("df_service.py not found at: {$script}");
+            return;
+        }
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            // start /B hides window
+            pclose(popen("start /B {$python} " . escapeshellarg($script) . " 2>&1", "r"));
         } else {
-            $data = null;
+            exec($python . ' ' . escapeshellarg($script) . ' > /dev/null 2>&1 &');
         }
 
-        if (! $data) {
-            throw new \Exception('Invalid or empty response from Python script: ' . $output);
+        self::log('DeepFace API started, waiting for health...');
+
+        // Wait up to 5 seconds for /health to become OK
+        $start = microtime(true);
+        do {
+            usleep(250000); // 0.25s
+            $health = @file_get_contents($healthUrl, false, $context);
+            if ($health !== false) {
+                self::log('DeepFace API became healthy.');
+                return;
+            }
+        } while (microtime(true) - $start < 30);
+
+        self::log('DeepFace API did not become healthy within 5s.');
+    }
+
+    /**
+     * Normalize image input to a data URL (base64) / URL / path string.
+     *
+     * @param string $source
+     * @return string
+     */
+    protected static function normalizeImageInput(string $source): string
+    {
+        $source = trim($source);
+
+        // Already a data URL
+        if (stripos($source, 'data:image') === 0) {
+            return $source;
         }
 
-        if (isset($data['error'])) {
-            throw new \Exception($data['error']);
+        // Looks like base64 (rough check: long base64-ish string)
+        $clean = str_replace(["\r", "\n"], '', $source);
+        if (strlen($clean) > 100 && preg_match('/^[A-Za-z0-9+\/]+=*$/', $clean)) {
+            return $source;
         }
 
-        return $data;
+        // URL - let Python fetch it
+        if (stripos($source, 'http://') === 0 || stripos($source, 'https://') === 0) {
+            return $source;
+        }
+
+        // Local file path -> convert to base64 data URL
+        if (is_file($source)) {
+            $data = file_get_contents($source);
+            if ($data === false) {
+                throw new \RuntimeException("Unable to read image file: {$source}");
+            }
+
+            $mime = 'image/jpeg';
+            if (function_exists('finfo_open')) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                if ($finfo) {
+                    $detected = finfo_file($finfo, $source);
+                    if ($detected) {
+                        $mime = $detected;
+                    }
+                    finfo_close($finfo);
+                }
+            }
+
+            $b64 = base64_encode($data);
+            return "data:{$mime};base64,{$b64}";
+        }
+
+        // Fallback: just return the string and let Python try (it can handle paths too)
+        return $source;
+    }
+
+    /**
+     * POST JSON to the DeepFace API and decode the response.
+     */
+    protected static function postJson(string $endpoint, array $payload): array
+    {
+        $url = self::$apiUrl . $endpoint;
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            throw new \RuntimeException('Unable to initialize cURL');
+        }
+
+        $json = json_encode($payload);
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS     => $json,
+            CURLOPT_TIMEOUT        => 30,
+        ]);
+
+        $response = curl_exec($ch);
+        if ($response === false) {
+            $err = curl_error($ch);
+            curl_close($ch);
+            throw new \RuntimeException('cURL error: ' . $err);
+        }
+
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            throw new \RuntimeException(
+                'Invalid JSON from DeepFace API: ' . substr($response, 0, 200)
+            );
+        }
+
+        if ($status >= 400) {
+            $msg = $decoded['error'] ?? $response;
+            $trace = $decoded['traceback'] ?? '';
+            throw new \RuntimeException("DeepFace API error ({$status}): " . $msg . "\n" . $trace);
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Simple file logger (optional).
+     */
+    protected static function log(string $message): void
+    {
+        if (!self::$debug) {
+            return;
+        }
+
+        $logDir = __DIR__ . DIRECTORY_SEPARATOR . 'logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0777, true);
+        }
+
+        $logFile = $logDir . DIRECTORY_SEPARATOR . 'deepface.log';
+        $line    = '[' . date('Y-m-d H:i:s') . '] ' . $message . PHP_EOL;
+        @file_put_contents($logFile, $line, FILE_APPEND);
     }
 }
