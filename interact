@@ -21,7 +21,7 @@ function verify() {
     $img1 = prompt("Enter path to first image: ");
     $img2 = prompt("Enter path to second image: ");
     try {
-        $result = DeepFace::compareImages($img1, $img2);
+        $result = DeepFace::compare($img1, $img2);
         print_r($result);
     } catch (Exception $e) {
         print_r([
@@ -38,7 +38,7 @@ function analyze() {
     $img = prompt("Enter path to image: ");
     try {
         // Call analyzeImage with just the image path, using default python path
-        $result = DeepFace::analyzeImage($img);
+        $result = DeepFace::analyze($img);
         echo "\nAnalysis Result:\n";
         print_r($result);
     } catch (Exception $e) {
@@ -68,7 +68,7 @@ function test_base64()
     }
 
     try {
-        $result = DeepFace::compareImages($base64Image1, $base64Image2);
+        $result = DeepFace::compare($base64Image1, $base64Image2);
         print_r($result);
     } catch (Exception $e) {
         echo "Error: " . $e->getMessage() . "\n";

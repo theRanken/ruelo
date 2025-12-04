@@ -1,7 +1,7 @@
 <?php
 
 $python = 'python';
-$script = realpath(__DIR__ . '/../../src/scripts/Python/df_service.py');
+$script = realpath(__DIR__ . '/../../src/scripts/df_service.py');
 if (!$script || !file_exists($script)) {
     echo "Script not found: $script\n";
     exit(1);
