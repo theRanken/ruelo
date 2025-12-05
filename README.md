@@ -2,7 +2,7 @@
     <img src="src/assets/logo.jpg" alt="" width="200">
 </div>
 
-A powerful face recognition and analysis library for PHP using MediaPipe, with support for file paths, base64 strings, and data URLs.
+A powerful face recognition and analysis library for PHP using DeepFace, with support for file paths, base64 strings, and data URLs.
 
 ## What is this?
 
@@ -31,56 +31,84 @@ This package provides robust face recognition, verification, and analysis capabi
 ### Python Requirements
 
 - Python 3.8 or higher
-- deepface
-- fastapi
-- python-multipart
-- uvicorn
-- pillow
-- numpy
-- opencv-python-headless
-- (see requirements.txt)
+- tensorflow==2.11
+- deepface==0.0.96
+- opencv-python-headless==4.10.0.84
+- numpy==1.24.4
+- pillow==10.4.0
+- pyyaml==6.0.2
+- fastapi==0.115.2
+- uvicorn==0.30.3
+- python-multipart==0.0.9
+- onnxruntime==1.17.0
+- pydantic==2.10.6
+- (see requirements.txt for details)
 
 ## Installation
 
-1. **Install the PHP library:**
+1. **Clone or download the repository:**
+
+    ```bash
+    git clone https://github.com/theranken/ruelo.git
+    cd ruelo
+    ```
+
+2. **Install the PHP library via Composer:**
+
+    ```bash
+    composer install
+    ```
+
+    Or if using as a dependency:
 
     ```bash
     composer require theranken/ruelo
     ```
 
-2. **Install Python dependencies:**
+3. **Install Python dependencies:**
+
+    You can use the provided setup script:
+
+    ```bash
+    ./setup.sh  # For Unix/Linux/macOS
+    # or
+    pip install -r requirements.txt
+    ```
+
+    On Windows, run:
 
     ```bash
     pip install -r requirements.txt
     ```
 
-3. **Start the FastAPI server:**
-    You can start the server automatically (it will start when needed) or manually:
+4. **Start the FastAPI server:**
 
-    **Automatic (recommended):** The server starts automatically when you use the library methods.
+    The server can start automatically when you use the library methods, or you can start it manually.
 
-    **Manual start:** Run the provided script from the library's directory:
+    **Automatic (recommended):** The server starts automatically when you call `DeepFace::compare()` or `DeepFace::analyze()`.
+
+    **Manual start:** Use the provided utility scripts:
 
     ```bash
-    php scripts/start_server.php
+    php utilities/start_server.php
     ```
 
-    If installed via Composer in another application (e.g., Laravel), run:
+    If installed via Composer in another application:
 
     ```bash
-    php vendor/theranken/ruelo/scripts/start_server.php
+    php vendor/theranken/ruelo/utilities/start_server.php
     ```
 
     To stop the server manually:
 
     ```bash
-    php scripts/stop_server.php
+    php utilities/stop_server.php
     ```
 
     Or if installed via Composer:
 
     ```bash
-    php vendor/theranken/ruelo/scripts/stop_server.php
+    php vendor/theranken/ruelo/utilities/stop_server.php
     ```
 
     Or directly:
@@ -89,7 +117,15 @@ This package provides robust face recognition, verification, and analysis capabi
     python src/scripts/df_service.py
     ```
 
-4. **(Optional) Docker usage:**
+5. **(Optional) Test with the interactive CLI tool:**
+
+    Run the interactive shell to test the library:
+
+    ```bash
+    php interact
+    ```
+
+6. **(Optional) Docker usage:**
     See below for Docker instructions.
 
 ## Usage
@@ -141,11 +177,13 @@ $result = $deepface->compare($dataUrl, 'image2.jpg');
 ```php
 use Ruelo\DeepFace;
 
-$deepface = new DeepFace('http://localhost:4800');
+// Basic analysis (static method)
+$result = DeepFace::analyze('path/to/image.jpg');
 
-// Basic analysis
-$result = $deepface->analyze('path/to/image.jpg');
-
+// The result contains age, gender, emotion, and race predictions
+echo "Age: " . $result['age'] . "\n";
+echo "Gender: " . $result['gender'] . "\n";
+echo "Emotion: " . $result['dominant_emotion'] . "\n";
 ```
 
 // The FastAPI server URL can be customized if needed:
@@ -161,6 +199,58 @@ $result = DeepFace::compareImages('image1.jpg', 'image2.jpg', 'http://localhost:
 ```
 
 // The CLI tool is no longer required. All operations are handled via the FastAPI server.
+
+## Interactive CLI Tool
+
+The library includes an interactive command-line tool for testing and experimenting with face recognition and analysis features. This tool provides a simple interface to test the library without writing code.
+
+### Running the Interactive Tool
+
+```bash
+php interact
+```
+
+### Example Session
+
+```
+=== DeepFacePHP Interactive Shell ===
+Type 'exit' to quit.
+
+Choose action ([v]erify, [a]nalyze, [q]uit): v
+Enter path to first image: /path/to/image1.jpg
+Enter path to second image: /path/to/image2.jpg
+Array
+(
+    [result] => Array
+        (
+            [verified] => 1
+            [distance] => 0.234
+            [threshold] => 0.6
+            [model] => ArcFace
+            ...
+        )
+    [total_time_seconds] => 1.234
+)
+
+Choose action ([v]erify, [a]nalyze, [q]uit): a
+Enter path to image: /path/to/image.jpg
+Array
+(
+    [age] => 28
+    [gender] => Woman
+    [dominant_emotion] => happy
+    ...
+)
+
+Choose action ([v]erify, [a]nalyze, [q]uit): q
+Goodbye!
+```
+
+The interactive tool supports:
+- **Face verification** between two images
+- **Face analysis** for age, gender, emotion, and race prediction
+- **Base64 testing** with pre-encoded image files
+- **Clear screen** and **quit** commands
 
 ## Results Format
 
@@ -245,9 +335,11 @@ Common error messages:
 
 ### Installation Issues
 
-- Ensure Python 3.6+ is installed and accessible
+- Ensure Python 3.8+ is installed and accessible
 - Install all required Python packages: `pip install -r requirements.txt`
 - Check file permissions for the Python script
+- On Windows, ensure the Python executable is in your PATH
+- On Unix/Linux/macOS, make sure the setup.sh script is executable: `chmod +x setup.sh`
 
 ### Input Problems
 
