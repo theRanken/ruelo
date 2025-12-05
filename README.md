@@ -30,7 +30,7 @@ This package provides robust face recognition, verification, and analysis capabi
 
 ### Python Requirements
 
-- Python 3.8 or higher
+- Python >=3.8 or <=3.11
 - tensorflow==2.11
 - deepface==0.0.96
 - opencv-python-headless==4.10.0.84
