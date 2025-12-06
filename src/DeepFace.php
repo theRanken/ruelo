@@ -230,6 +230,8 @@ class DeepFace
      */
     protected static function postJson(string $endpoint, array $payload): array
     {
+        set_time_limit(0);
+        
         $url = self::$apiUrl . $endpoint;
 
         $ch = curl_init($url);
@@ -244,7 +246,8 @@ class DeepFace
             CURLOPT_POST           => true,
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS     => $json,
-            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_TIMEOUT        => 0,
+            CURLOPT_CONNECTTIMEOUT => 60,
         ]);
 
         $response = curl_exec($ch);
@@ -269,6 +272,8 @@ class DeepFace
             $trace = $decoded['traceback'] ?? '';
             throw new \RuntimeException("DeepFace API error ({$status}): " . $msg . "\n" . $trace);
         }
+
+        set_time_limit(30);
 
         return $decoded;
     }
